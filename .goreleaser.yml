@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+---
+version: 2
+
+builds:
+  - binary: samarkand
+    main: ./cmd/samarkand
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      - "-s -w"
+      - "{{if .IsNightly}}-X github.com/coding-kelps/samarkand/internal/version.version={{.Version}}{{end}}"
+    skip_upload: true
+
+gomod:
+  proxy: true
+
+dockers_v2:
+  - images:
+      - coding-kelps/samarkand
+      - ghcr.io/coding-kelps/samarkand
+    tags:
+      - "v{{ .Version }}"
+      - "{{if not .IsNightly}}latest{{end}}"
+      - "{{if .IsNightly}}nightly{{end}}"
+    labels:
+      "org.opencontainers.image.description": "A low-latency virtual market server."
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    disable: "{{ .IsSnapshot }}"
+    sbom: "{{ not .IsNightly }}"
+
+git:
+  ignore_tags:
+    - "{{if not .IsNightly}}nightly{{end}}"
+
+docker_signs:
+  - cmd: cosign
+    args:
+      - sign
+      - --yes
+      - "${artifact}@${digest}"
+    artifacts: all
+    output: true
+
+snapshot:
+  version_template: '{{.Version}}'

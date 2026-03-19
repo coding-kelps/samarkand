@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+---
+version: '3'
+
+vars:
+  APP_NAME: samarkand
+  IMAGE: ghcr.io/coding-kelps/samarkand
+  VERSION:
+    sh: echo ${VERSION:~unknown}
+  COMMIT_HASH:
+    sh: git rev-parse HEAD || echo "unknown"
+
+tasks:
+  default:
+    desc: Show help
+    cmds:
+      - task --list-all
+    silent: true
+
+  run:
+    desc: Runs Samarkand
+    cmds:
+      - go run ./cmd/samarkand {{.CLI_ARGS}}
+
+  build:
+    desc: Build the binary locally
+    cmds:
+      - go build -trimpath -ldflags="-s -w" -o {{.BINARY}} ./cmd/samarkand
+
+  mod:
+    desc: Downloads and tidy Go modules
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  clean:
+    desc: Cleans temp files and folders
+    aliases: [clear]
+    cmds:
+      - rm -rf dist/
+      - rm -rf tmp/
+
+  lint:
+    desc: Runs golangci-lint
+    aliases: [l]
+    sources:
+      - './**/*.go'
+      - .golangci.yml
+      - go.mod
+    cmds:
+      - golangci-lint run
+
+  lint:fix:
+    desc: Runs golangci-lint and fixes any issues
+    sources:
+      - './**/*.go'
+      - .golangci.yml
+      - go.mod
+    cmds:
+      - golangci-lint run --fix
+
+  format:
+    desc: Runs golangci-lint and formats any Go files
+    aliases: [fmt, f]
+    sources:
+      - './**/*.go'
+      - .golangci.yml
+    cmds:
+      - golangci-lint fmt
+
+  image:build:
+    desc: Build the container image locally (dev tag)
+    cmds:
+      - docker build -f Containerfile -t {{.IMAGE}}:dev .
+
+  image:sign:
+    desc: "Sign an image with cosign. Usage: task image:sign IMAGE_REF=<ref@digest>"
+    requires:
+      vars: [IMAGE_REF]
+    cmds:
+      - cosign sign --yes {{.IMAGE_REF}}
+
+  image:verify:
+    desc: "Verify a signed image. Usage: task image:verify IMAGE_REF=<ref@digest>"
+    requires:
+      vars: [IMAGE_REF]
+    cmds:
+      - cosign verify
+          --certificate-identity-regexp="https://github.com/yourorg/samarkand"
+          --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
+          {{.IMAGE_REF}}
+
+  release:snapshot:
+    desc: Local snapshot build (no publish, no signing)
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  release:
+    desc: Full release — requires GITHUB_TOKEN + COSIGN_* env vars
+    cmds:
+      - goreleaser release --clean
