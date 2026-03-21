@@ -1,0 +1,7 @@
+---
+server:
+  grpc_addr: :50051
+  http_addr: :80
+  shutdown_timeout: 30
+log:
+  level: info

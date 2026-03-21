@@ -32,9 +32,10 @@ dockers_v2:
       - "{{if not .IsNightly}}latest{{end}}"
       - "{{if .IsNightly}}nightly{{end}}"
     labels:
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.name": "Samarkand"
       "org.opencontainers.image.description": "A low-latency virtual market server."
       "org.opencontainers.image.created": "{{.Date}}"
-      "org.opencontainers.image.name": "{{.ProjectName}}"
       "org.opencontainers.image.revision": "{{.FullCommit}}"
       "org.opencontainers.image.version": "{{.Version}}"
       "org.opencontainers.image.source": "{{.GitURL}}"
