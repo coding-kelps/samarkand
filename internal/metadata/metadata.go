@@ -1,4 +1,4 @@
-package version
+package metadata
 
 import (
 	_ "embed"
@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	//go:embed name.txt
+	name string
 	//go:embed version.txt
 	version string
 	commit  string
@@ -14,6 +16,7 @@ var (
 )
 
 func init() {
+	name = strings.TrimSpace(name)
 	version = strings.TrimSpace(version)
 	// Attempt to get build info from the Go runtime. We only use this if not
 	// built from a tagged version.
@@ -39,6 +42,10 @@ func getCommit(info *debug.BuildInfo) string {
 		}
 	}
 	return ""
+}
+
+func GetName() string {
+	return name
 }
 
 // GetVersion returns the version of samarkand. By default, this is retrieved

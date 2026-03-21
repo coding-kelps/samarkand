@@ -32,6 +32,8 @@ go.work.sum
 .vscode/
 
 # Build artifacts
+samarkand
 dist/
 build/
 bin/
+.task/

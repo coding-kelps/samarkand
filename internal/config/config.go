@@ -8,8 +8,7 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	GRPCAddr        string        `koanf:"grpc_addr"`
-	HTTPAddr        string        `koanf:"http_addr"`
+	Addr            string        `koanf:"addr"`
 	ShutdownTimeout time.Duration `koanf:"shutdown_timeout"`
 }
 
@@ -20,8 +19,7 @@ type LogConfig struct {
 func Default() Config {
 	return Config{
 		Server: ServerConfig{
-			GRPCAddr:        ":50051",
-			HTTPAddr:        ":80",
+			Addr:            ":50051",
 			ShutdownTimeout: 30 * time.Second,
 		},
 		Log: LogConfig{

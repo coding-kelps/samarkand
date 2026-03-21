@@ -25,7 +25,7 @@ tasks:
   build:
     desc: Build the binary locally
     cmds:
-      - go build -trimpath -ldflags="-s -w" -o {{.BINARY}} ./cmd/samarkand
+      - go build -trimpath -ldflags="-s -w" -o {{.APP_NAME}} ./cmd/samarkand
 
   mod:
     desc: Downloads and tidy Go modules
