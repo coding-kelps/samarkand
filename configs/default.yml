@@ -4,3 +4,8 @@ server:
   shutdown_timeout: 30
 log:
   level: info
+redis:
+  addr: localhost:6739
+  # password: ""
+  # password_file: "/var/run/secrets/redis_password"
+  db: 0
