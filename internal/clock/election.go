@@ -3,8 +3,8 @@ package clock
 import (
 	"context"
 	"errors"
-	"time"
 	"log/slog"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -12,21 +12,20 @@ import (
 const (
 	leaderKey = "market:leader"
 
-	leaseTTL       = 3 * time.Second          // how long the lock lives without renewal
-	renewInterval  = leaseTTL / 3             // renew well before expiry
-	retryInterval  = 500 * time.Millisecond   // how often a standby retries acquisition
+	leaseTTL      = 3 * time.Second        // how long the lock lives without renewal
+	renewInterval = leaseTTL / 3           // renew well before expiry
+	retryInterval = 500 * time.Millisecond // how often a standby retries acquisition
 )
 
 type Election struct {
 	rdb      *redis.Client
 	leaderID string // unique ID for this instance (e.g. hostname + pid)
-	log  *slog.Logger
+	log      *slog.Logger
 }
 
 func NewElection(rdb *redis.Client, leaderID string) *Election {
 	return &Election{rdb: rdb, leaderID: leaderID}
 }
-
 
 // Campaign blocks until this instance wins the election, then calls
 // onElected in a goroutine. When onElected returns (or ctx is cancelled),

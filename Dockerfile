@@ -4,7 +4,7 @@ ARG TARGETPLATFORM
 
 COPY --chown=nonroot:nonroot $TARGETPLATFORM/samarkand /bin/
 
-EXPOSE 8080 50051
+EXPOSE 50051
 
 ENTRYPOINT ["/bin/samarkand"]
 

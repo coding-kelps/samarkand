@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/coding-kelps/samarkand/internal/config/config.schema.json",
+  "title": "Samarkand configuration",
+  "description": "Configuration schema for the Samarkand application.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "server": {
+      "description": "API server (gRPC & HTTP).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "addr": {
+          "description": "Listening address of the server",
+          "type": "string",
+          "default": "0.0.0.0:50051"
+        },
+        "shutdown_timeout": {
+          "description": "Timeout delay duration when shutting down in seconds.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 300,
+          "default": 30
+        }
+      },
+      "default": {}
+    },
+    "log": {
+      "description": "Application logging.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "description": "Log level.",
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error",
+            "fatal"
+          ],
+          "default": "info"
+        }
+      },
+      "default": {}
+    },
+    "redis": {
+      "description": "Redis client.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "addr": {
+          "description": "Address of the Redis service.",
+          "type": "string",
+          "default": "localhost:6379"
+        },
+        "password": {
+          "description": "Authentication password.",
+          "type": "string"
+        },
+        "password_file": {
+          "description": "Filepath of the file containing the authentication password.",
+          "type": "string"
+        },
+        "db": {
+          "description": "Redis database index to use.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15,
+          "default": 0
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "password"
+          ]
+        },
+        {
+          "required": [
+            "password_file"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "password"
+                ]
+              },
+              {
+                "required": [
+                  "password_file"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "default": {}
+    }
+  },
+  "default": {}
+}

@@ -2,9 +2,9 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
-	"fmt"
 
 	otlp "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/log/global"
@@ -17,11 +17,11 @@ import (
 )
 
 func ParseLogLevel(s string) (slog.Level, error) {
-    var level slog.Level
-    if err := level.UnmarshalText([]byte(s)); err != nil {
-        return level, fmt.Errorf("invalid log level %q: %w", s, err)
-    }
-    return level, nil
+	var level slog.Level
+	if err := level.UnmarshalText([]byte(s)); err != nil {
+		return level, fmt.Errorf("invalid log level %q: %w", s, err)
+	}
+	return level, nil
 }
 
 func SetupOTelLogger(cfg *config.Config, ctx context.Context) (shutdown func(context.Context) error, err error) {

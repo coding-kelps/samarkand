@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ func failingLoader(path string) (config.Config, error) {
 
 func run(args []string, loader func(string) (config.Config, error)) (string, error) {
 	var buf bytes.Buffer
-	cmd := newCommand(&buf, loader)
+	cmd := NewCommand(&buf, loader)
 	err := cmd.Run(context.Background(), args)
 	return buf.String(), err
 }

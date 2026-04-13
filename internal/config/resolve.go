@@ -5,7 +5,18 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
+
+func (s *ServerConfig) ResolvedShutdownTimeout() *string {
+	return nil
+}
+
+func (s *ServerConfig) Resolve() error {
+	s.resolvedShutdownTimeout = time.Duration(s.ShutdownTimeout) * time.Second
+
+	return nil
+}
 
 func (r *RedisConfig) ResolvedPassword() *string {
 	return r.resolvedPassword
