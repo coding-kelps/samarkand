@@ -7,12 +7,10 @@ import (
 	"time"
 
 	otlp "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
-	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.9.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
 
-	"github.com/coding-kelps/samarkand/internal/config"
 	"github.com/coding-kelps/samarkand/internal/metadata"
 )
 
@@ -24,7 +22,7 @@ func ParseLogLevel(s string) (slog.Level, error) {
 	return level, nil
 }
 
-func SetupOTelLogger(cfg *config.Config, ctx context.Context) (shutdown func(context.Context) error, err error) {
+func NewOTelLoggerProvider(ctx context.Context) (*sdklog.LoggerProvider, error) {
 	exporter, err := otlp.New(ctx)
 	if err != nil {
 		return nil, err
@@ -50,9 +48,7 @@ func SetupOTelLogger(cfg *config.Config, ctx context.Context) (shutdown func(con
 		),
 	)
 
-	global.SetLoggerProvider(provider)
-
-	return provider.Shutdown, nil
+	return provider, nil
 }
 
 type multiHandler struct {

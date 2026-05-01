@@ -68,6 +68,9 @@ func Load(fp string) (Config, error) {
 	err = k.Load(env.Provider(".", env.Opt{
 		Prefix: "SAMARKAND__",
 		TransformFunc: func(k, v string) (string, any) {
+			if k == "SAMARKAND__CONFIG" {
+				return "", nil
+			}
 			k = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(k, "SAMARKAND__")), "_", ".")
 			return k, v
 		},

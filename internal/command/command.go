@@ -1,19 +1,16 @@
-package app
+package command
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 
 	"github.com/urfave/cli/v3"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 
+	"github.com/coding-kelps/samarkand/internal/app"
 	"github.com/coding-kelps/samarkand/internal/config"
-	"github.com/coding-kelps/samarkand/internal/logger"
 	"github.com/coding-kelps/samarkand/internal/metadata"
-	"github.com/coding-kelps/samarkand/internal/server"
 )
 
 func NewCommand(w io.Writer, loader func(string) (config.Config, error)) *cli.Command {
@@ -30,7 +27,7 @@ func NewCommand(w io.Writer, loader func(string) (config.Config, error)) *cli.Co
 			{
 				Name:   "start",
 				Usage:  "start samarkand market server",
-				Action: startAction(w, loader),
+				Action: start(w, loader),
 			},
 			{
 				Name:  "validate",
@@ -41,53 +38,39 @@ func NewCommand(w io.Writer, loader func(string) (config.Config, error)) *cli.Co
 						Usage: "Display loaded configuration (for debugging purposes only!)",
 					},
 				},
-				Action: validateAction(w, loader),
+				Action: validate(w, loader),
 			},
 			{
-				Name:  "version",
-				Usage: "Get the version of samarkand",
-				Action: func(_ context.Context, _ *cli.Command) error {
-					fmt.Fprintln(w, metadata.GetVersionWithBuildInfo())
-					return nil
-				},
+				Name:   "version",
+				Usage:  "Get the version of samarkand",
+				Action: version(w, loader),
 			},
 		},
 	}
 }
 
-func startAction(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
+func start(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
 	return func(ctx context.Context, cmd *cli.Command) error {
 		cfg, err := loader(cmd.Root().String("config"))
 		if err != nil {
 			return err
 		}
 
-		shutdown, err := logger.SetupOTelLogger(&cfg, ctx)
-		if err != nil {
-			return err
-		}
-		defer shutdown(ctx)
-
-		level, err := logger.ParseLogLevel(cfg.Log.Level)
+		a, err := app.NewApp(ctx, &cfg)
 		if err != nil {
 			return err
 		}
 
-		otelHandler := otelslog.NewHandler(metadata.GetName())
-		consoleHandler := slog.NewTextHandler(w, &slog.HandlerOptions{
-			Level:     level,
-			AddSource: true,
-		})
+		err = a.Run()
+		if err != nil {
+			return err
+		}
 
-		log := slog.New(logger.NewMultiHandler(otelHandler, consoleHandler))
-		slog.SetDefault(log)
-
-		s := server.New(&cfg, log)
-		return s.Start()
+		return nil
 	}
 }
 
-func validateAction(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
+func validate(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
 	return func(ctx context.Context, cmd *cli.Command) error {
 		cfg, err := loader(cmd.Root().String("config"))
 		if err != nil {
@@ -106,6 +89,13 @@ func validateAction(w io.Writer, loader func(string) (config.Config, error)) cli
 			fmt.Println(string(cfgJSON))
 		}
 
+		return nil
+	}
+}
+
+func version(w io.Writer, _ func(string) (config.Config, error)) cli.ActionFunc {
+	return func(_ context.Context, _ *cli.Command) error {
+		fmt.Fprintln(w, metadata.GetVersionWithBuildInfo())
 		return nil
 	}
 }
