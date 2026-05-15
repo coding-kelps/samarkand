@@ -2,29 +2,47 @@ package clock
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 )
 
-const (
-	leaderKey = "market:leader"
-
-	leaseTTL      = 3 * time.Second        // how long the lock lives without renewal
-	renewInterval = leaseTTL / 3           // renew well before expiry
-	retryInterval = 500 * time.Millisecond // how often a standby retries acquisition
-)
-
 type Election struct {
-	rdb      *redis.Client
-	leaderID string // unique ID for this instance (e.g. hostname + pid)
-	log      *slog.Logger
+	rdb  *redis.Client
+	lock string
+	// unique ID for this instance (e.g. hostname + pid)
+	instanceID    string
+	leaseTTL      time.Duration
+	renewInterval time.Duration
+	retryInterval time.Duration
+	logger        *slog.Logger
 }
 
-func NewElection(rdb *redis.Client, leaderID string) *Election {
-	return &Election{rdb: rdb, leaderID: leaderID}
+type ElectionConfig struct {
+	Rdb           *redis.Client
+	Lock          string
+	LeaseTTL      time.Duration
+	RenewInterval time.Duration
+	RetryInterval time.Duration
+
+	Logger *slog.Logger
+}
+
+func NewElection(cfg *ElectionConfig) (*Election, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+	instanceID := fmt.Sprintf("%s-%d", hostname, os.Getpid())
+
+	return &Election{
+		rdb:        cfg.Rdb,
+		instanceID: instanceID,
+		logger:     cfg.Logger,
+	}, nil
 }
 
 // Campaign blocks until this instance wins the election, then calls
@@ -34,17 +52,20 @@ func NewElection(rdb *redis.Client, leaderID string) *Election {
 //	for {
 //	    if err := e.Campaign(ctx, onElected); !errors.Is(err, ErrNotRenewed) { break }
 //	}
-func (e *Election) Campaign(ctx context.Context, onElected func(ctx context.Context)) error {
+func (e *Election) Campaign(ctx context.Context, onElected func(ctx context.Context) error) error {
 	// --- Phase 1: acquire the lock ---
 	for {
-		ok, err := e.rdb.SetNX(ctx, leaderKey, e.leaderID, leaseTTL).Result()
-		if err != nil {
+		res, err := e.rdb.SetArgs(ctx, e.lock, e.instanceID, redis.SetArgs{
+			Mode: "NX",
+			TTL:  leaseTTL,
+		}).Result()
+		if err != redis.Nil && err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
 
-			e.log.Error("acquire error", "error", err)
-		} else if ok {
+			e.logger.Error("acquire error", "error", err)
+		} else if res == "OK" {
 			break // we are the leader
 		}
 
@@ -56,7 +77,7 @@ func (e *Election) Campaign(ctx context.Context, onElected func(ctx context.Cont
 		}
 	}
 
-	e.log.Error("leader elected", "leader_id", e.leaderID)
+	e.logger.Info("gained leadership", "instance_id", e.instanceID)
 
 	// --- Phase 2: hold the lock via a renewal goroutine ---
 	leaderCtx, abdicate := context.WithCancel(ctx)
@@ -105,12 +126,12 @@ func (e *Election) holdLease(ctx context.Context) error {
 			// Only renew if we still own the key.
 			renewed, err := e.tryRenew(ctx)
 			if err != nil {
-				e.log.Error("renewal error", "error", err)
-				return ErrNotRenewed
+				e.logger.Error("renewal error", "error", err)
+				return &ErrNotRenewed{}
 			}
 			if !renewed {
-				e.log.Error("lost leadership", "leader_id", e.leaderID)
-				return ErrNotRenewed
+				e.logger.Error("lost leadership", "instance_id", e.instanceID)
+				return &ErrNotRenewed{}
 			}
 		}
 	}
@@ -127,7 +148,7 @@ var renewScript = redis.NewScript(`
 
 func (e *Election) tryRenew(ctx context.Context) (bool, error) {
 	ttlMs := leaseTTL.Milliseconds()
-	res, err := renewScript.Run(ctx, e.rdb, []string{leaderKey}, e.leaderID, ttlMs).Int()
+	res, err := renewScript.Run(ctx, e.rdb, []string{e.lock}, e.instanceID, ttlMs).Int()
 	return res == 1, err
 }
 
@@ -141,10 +162,7 @@ var releaseScript = redis.NewScript(`
 `)
 
 func (e *Election) release(ctx context.Context) {
-	if _, err := releaseScript.Run(ctx, e.rdb, []string{leaderKey}, e.leaderID).Int(); err != nil {
-		e.log.Error("release error (non-fatal)", "error", err)
+	if _, err := releaseScript.Run(ctx, e.rdb, []string{e.lock}, e.instanceID).Int(); err != nil {
+		e.logger.Error("release error (non-fatal)", "error", err)
 	}
 }
-
-// ErrNotRenewed is returned when a leader loses its lease.
-var ErrNotRenewed = errors.New("leader lease not renewed")

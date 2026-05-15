@@ -49,7 +49,7 @@ func NewCommand(w io.Writer, loader func(string) (config.Config, error)) *cli.Co
 	}
 }
 
-func start(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
+func start(_ io.Writer, loader func(string) (config.Config, error)) cli.ActionFunc {
 	return func(ctx context.Context, cmd *cli.Command) error {
 		cfg, err := loader(cmd.Root().String("config"))
 		if err != nil {
@@ -61,7 +61,7 @@ func start(w io.Writer, loader func(string) (config.Config, error)) cli.ActionFu
 			return err
 		}
 
-		err = a.Run()
+		err = a.Run(ctx)
 		if err != nil {
 			return err
 		}

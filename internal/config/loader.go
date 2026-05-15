@@ -14,6 +14,10 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
+const (
+	AppPrefix = "SAMARKAND__"
+)
+
 //go:embed config.schema.json
 var jsonSchema []byte
 
@@ -66,12 +70,12 @@ func Load(fp string) (Config, error) {
 	}
 
 	err = k.Load(env.Provider(".", env.Opt{
-		Prefix: "SAMARKAND__",
+		Prefix: AppPrefix,
 		TransformFunc: func(k, v string) (string, any) {
-			if k == "SAMARKAND__CONFIG" {
+			if k == fmt.Sprintf("%sCONFIG", AppPrefix) {
 				return "", nil
 			}
-			k = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(k, "SAMARKAND__")), "_", ".")
+			k = strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(k, AppPrefix)), "__", ".")
 			return k, v
 		},
 	}), nil)
@@ -86,6 +90,10 @@ func Load(fp string) (Config, error) {
 	if result := schema.ValidateStruct(cfg); !result.IsValid() {
 		return cfg, &ErrConfigValidation{Errors: result.DetailedErrors()}
 	}
+
+	// Temporary
+	// I need to find a generalized way of handling resolved values
+	_ = cfg.Redis.Resolve()
 
 	return cfg, nil
 }

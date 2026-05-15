@@ -1,8 +1,6 @@
 package config
 
 import (
-	"errors"
-	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -18,27 +16,41 @@ func (s *ServerConfig) Resolve() error {
 	return nil
 }
 
-func (r *RedisConfig) ResolvedPassword() *string {
+func (r *RedisConfig) ResolvedUsername() string {
+	return r.resolvedUsername
+}
+
+func (r *RedisConfig) ResolvedPassword() string {
 	return r.resolvedPassword
 }
 
-// Resolve validates the password configuration and, if PasswordFile is set,
-// reads the file and stores its trimmed contents as the effective password.
+// Resolve validates the username and password configuration and, if
+// UsernameFile or PasswordFile is set, reads the file and stores its trimmed
+// contents as the effective username or password.
 func (r *RedisConfig) Resolve() error {
-	if r.Password != nil && r.PasswordFile != nil {
-		return errors.New("redis: password and password_file are mutually exclusive")
+	if r.UsernameFile != nil {
+		data, err := os.ReadFile(*r.UsernameFile)
+		if err != nil {
+			return err
+		}
+		s := strings.TrimRight(string(data), "\r\n")
+		r.resolvedUsername = s
+		return nil
+	} else {
+		r.resolvedUsername = *r.Username
 	}
 
 	if r.PasswordFile != nil {
 		data, err := os.ReadFile(*r.PasswordFile)
 		if err != nil {
-			return fmt.Errorf("redis: reading password_file: %w", err)
+			return err
 		}
 		s := strings.TrimRight(string(data), "\r\n")
-		r.resolvedPassword = &s
+		r.resolvedPassword = s
 		return nil
+	} else {
+		r.resolvedPassword = *r.Password
 	}
 
-	r.resolvedPassword = r.Password
 	return nil
 }

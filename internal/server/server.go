@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
@@ -32,22 +29,22 @@ func NewServer(cfg *ServerConfig) *Server {
 	}
 }
 
-func (s *Server) Start() error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
+func (s *Server) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
 		addr := s.addr
+
 		lis, err := net.Listen("tcp", addr)
 		if err != nil {
 			return fmt.Errorf("grpc listen %s: %w", addr, err)
 		}
+
 		s.logger.Info("gRPC server listening", "addr", addr)
 		if err := s.grpc.Serve(lis); err != nil {
 			return fmt.Errorf("grpc serve: %w", err)
 		}
+
 		return nil
 	})
 

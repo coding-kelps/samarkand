@@ -86,7 +86,7 @@ tasks:
       vars: [IMAGE_REF]
     cmds:
       - cosign verify
-          --certificate-identity-regexp="https://github.com/yourorg/samarkand"
+          --certificate-identity-regexp="https://github.com/coding-kelps/samarkand"
           --certificate-oidc-issuer="https://token.actions.githubusercontent.com"
           {{.IMAGE_REF}}
 

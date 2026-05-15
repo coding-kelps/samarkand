@@ -42,6 +42,19 @@
             "fatal"
           ],
           "default": "info"
+        },
+        "opentelemetry": {
+          "description": "OpenTelemetry exporting configuration of the logger.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "description": "Enable the logger OpenTelemetry exporter.",
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "default": {}
         }
       },
       "default": {}
@@ -55,6 +68,14 @@
           "description": "Address of the Redis service.",
           "type": "string",
           "default": "localhost:6379"
+        },
+        "username": {
+          "description": "Authentication username.",
+          "type": "string"
+        },
+        "username_file": {
+          "description": "Filepath of the file containing the authentication username.",
+          "type": "string"
         },
         "password": {
           "description": "Authentication password.",
