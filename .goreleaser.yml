@@ -17,14 +17,14 @@ builds:
       - -trimpath
     ldflags:
       - "-s -w"
-      - "{{if .IsNightly}}-X github.com/coding-kelps/samarkand/internal/version.version={{.Version}}{{end}}"
-    skip_upload: true
+      - "{{if .IsNightly}}-X github.com/coding-kelps/samarkand/internal/metadata.version={{.Version}}{{end}}"
 
 gomod:
   proxy: true
 
 dockers_v2:
-  - images:
+  - dockerfile: Containerfile
+    images:
       - coding-kelps/samarkand
       - ghcr.io/coding-kelps/samarkand
     tags:
@@ -33,7 +33,6 @@ dockers_v2:
       - "{{if .IsNightly}}nightly{{end}}"
     labels:
       "org.opencontainers.image.name": "{{.ProjectName}}"
-      "org.opencontainers.image.name": "Samarkand"
       "org.opencontainers.image.description": "A low-latency virtual market server."
       "org.opencontainers.image.created": "{{.Date}}"
       "org.opencontainers.image.revision": "{{.FullCommit}}"
@@ -42,7 +41,7 @@ dockers_v2:
     platforms:
       - linux/amd64
       - linux/arm64
-    disable: "{{ .IsSnapshot }}"
+    # disable: "{{ .IsSnapshot }}"
     sbom: "{{ not .IsNightly }}"
 
 git:

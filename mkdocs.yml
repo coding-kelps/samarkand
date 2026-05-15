@@ -6,7 +6,7 @@ site_author: Coding Kelps
 copyright: Copyright (c) 2026 Coding Kelps.
 repo_name: coding-kelps/samarkand
 repo_url: https://github.com/coding-kelps/samarkand
-edit_uri: blob/master/docs/
+edit_uri: blob/main/docs/
 theme:
   name: material
   features:

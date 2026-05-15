@@ -37,3 +37,6 @@ dist/
 build/
 bin/
 .task/
+
+# Debug file
+.debug*

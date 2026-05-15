@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-func (s *Server) newGRPCServer() *grpc.Server {
-	srv := grpc.NewServer(s.grpcServerOptions()...)
+func newGRPCServer() *grpc.Server {
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(), grpc.ChainStreamInterceptor())
 
 	healthSrv := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(srv, healthSrv)
@@ -17,11 +17,4 @@ func (s *Server) newGRPCServer() *grpc.Server {
 	reflection.Register(srv)
 
 	return srv
-}
-
-func (s *Server) grpcServerOptions() []grpc.ServerOption {
-	return []grpc.ServerOption{
-		grpc.ChainUnaryInterceptor(),
-		grpc.ChainStreamInterceptor(),
-	}
 }

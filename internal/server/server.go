@@ -5,44 +5,46 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
-
-	"github.com/coding-kelps/samarkand/internal/config"
 )
 
 type Server struct {
-	cfg  *config.Config
-	log  *slog.Logger
-	grpc *grpc.Server
+	addr   string
+	logger *slog.Logger
+	grpc   *grpc.Server
 }
 
-func New(cfg *config.Config, log *slog.Logger) *Server {
-	s := &Server{cfg: cfg, log: log}
-	s.grpc = s.newGRPCServer()
-	return s
+type ServerConfig struct {
+	Addr   string
+	Logger *slog.Logger
 }
 
-func (s *Server) Start() error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+func NewServer(cfg *ServerConfig) *Server {
+	return &Server{
+		addr:   cfg.Addr,
+		grpc:   newGRPCServer(),
+		logger: cfg.Logger,
+	}
+}
 
+func (s *Server) Start(ctx context.Context) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		addr := s.cfg.Server.Addr
+		addr := s.addr
+
 		lis, err := net.Listen("tcp", addr)
 		if err != nil {
 			return fmt.Errorf("grpc listen %s: %w", addr, err)
 		}
-		s.log.Info("gRPC server listening", "addr", addr)
+
+		s.logger.Info("gRPC server listening", "addr", addr)
 		if err := s.grpc.Serve(lis); err != nil {
 			return fmt.Errorf("grpc serve: %w", err)
 		}
+
 		return nil
 	})
 
@@ -50,6 +52,6 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Stop() {
-	s.log.Info("stopping gRPC server")
+	s.logger.Info("stopping gRPC server")
 	s.grpc.GracefulStop()
 }
